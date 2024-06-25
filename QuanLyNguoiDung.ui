@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1224</width>
-    <height>714</height>
+    <height>688</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -444,7 +444,7 @@ QPushButton:hover{
       </property>
      </column>
     </widget>
-    <widget class="QPushButton" name="btnThem_2">
+    <widget class="QPushButton" name="btnSuDungDichVu">
      <property name="geometry">
       <rect>
        <x>750</x>
@@ -467,15 +467,15 @@ QPushButton:hover{
 }</string>
      </property>
      <property name="text">
-      <string>Sử dụng dịch vụ</string>
+      <string>Mua Hàng</string>
      </property>
     </widget>
-    <widget class="QPushButton" name="btnThem_3">
+    <widget class="QPushButton" name="btnNguoiDungMuaHang">
      <property name="geometry">
       <rect>
        <x>950</x>
        <y>360</y>
-       <width>251</width>
+       <width>241</width>
        <height>51</height>
       </rect>
      </property>
@@ -493,7 +493,7 @@ QPushButton:hover{
 }</string>
      </property>
      <property name="text">
-      <string>Người dùng mua hàng</string>
+      <string>Sử dụng dịch vụ</string>
      </property>
     </widget>
    </widget>

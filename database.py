@@ -30,7 +30,13 @@ class Database:
         results = self.cur.fetchall()
         self.close_connection()
         return results
-
+   #select all user voi ten va id
+    def select_user(self):
+        self.open_connection()
+        self.cur.execute("SELECT id, ten FROM user")
+        results = self.cur.fetchall()
+        self.close_connection()
+        return results
     def insert_user(self, username, sdt, email, diachi, luong, vitri, quyen, ngaysinh):
         self.open_connection()
         query = "INSERT INTO user(ten, so_dien_thoai, email, dia_chi, luong, vi_tri, quyen, ngay_sinh) VALUES(%s, %s, %s, %s, %s, %s, %s, %s)"
@@ -118,3 +124,40 @@ class Database:
         self.cur.execute(query, (id,))
         self.con.commit()
         self.close_connection()
+    # them du lieu vao bang user_dich_vu
+    def insert_user_service(self, user_id, service_id, quantity):
+        self.open_connection()
+        query = "INSERT INTO user_dich_vu (ID_user, ID_dich_vu, so_luong) VALUES(%s, %s, %s)"
+        self.cur.execute(query, (user_id, service_id, quantity))
+        self.con.commit()
+        self.close_connection()
+    # sua
+    def update_user_s1ervice(self, user_id, service_id, quantity):
+        self.open_connection()
+        query = "UPDATE user_dich_vu SET so_luong=%s WHERE ID_user=%s AND ID_dich_vu=%s"
+        self.cur.execute(query, (quantity, user_id, service_id))
+        self.con.commit()
+        self.close_connection()
+    # xoa
+    def delete_user_service(self, user_id, service_id):
+        self.open_connection()
+        query = "DELETE FROM user_dich_vu WHERE ID_user=%s AND ID_dich_vu=%s"
+        self.cur.execute(query, (user_id, service_id))
+        self.con.commit()
+        self.close_connection()
+    def select_quantity_user_service(self, user_id, service_id):
+        self.open_connection()
+        print(user_id, service_id)
+        query = "SELECT so_luong FROM user_dich_vu WHERE ID_user=%s AND ID_dich_vu=%s"
+        self.cur.execute(query, (user_id, service_id))
+        result = self.cur.fetchone()
+        self.close_connection()
+        return result
+    def select_user_service(self):
+        self.open_connection()
+        query = "SELECT * FROM user_dich_vu"
+        self.cur.execute(query)
+        results = self.cur.fetchall()
+        self.close_connection()
+        return results
+
