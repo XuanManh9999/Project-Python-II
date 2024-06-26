@@ -188,40 +188,14 @@ QPushButton:hover{
 }</string>
      </property>
      <property name="text">
-      <string>Quản lý đơn hàng</string>
-     </property>
-    </widget>
-    <widget class="QPushButton" name="btnBaoCao">
-     <property name="geometry">
-      <rect>
-       <x>10</x>
-       <y>560</y>
-       <width>251</width>
-       <height>61</height>
-      </rect>
-     </property>
-     <property name="styleSheet">
-      <string notr="true">QPushButton{
-	font-size: 20px;
-    border-radius: 10px;
-	background-color: rgb(255, 201, 248);
-	color:rgb(255, 255, 255);
-	font-weight: bold;
-}
-QPushButton:hover{
-	background-color: rgb(0, 170, 255);
-	cursor: pointer;
-}</string>
-     </property>
-     <property name="text">
-      <string>Báo cáo doanh thu</string>
+      <string>Thống kê doanh thu</string>
      </property>
     </widget>
     <widget class="QPushButton" name="btnDangXuat">
      <property name="geometry">
       <rect>
        <x>10</x>
-       <y>630</y>
+       <y>570</y>
        <width>251</width>
        <height>61</height>
       </rect>

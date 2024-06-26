@@ -217,4 +217,10 @@ class Database:
         self.cur.execute(query, (soluong, ID_product, ID_don_hang))
         self.con.commit()
         self.close_connection()
-
+    def select_tt_order_service(self):
+        self.open_connection()
+        query = "SELECT don_hang.ID, user.ten, user.so_dien_thoai, user.email, user.dia_chi, don_hang.trang_thai_don_hang, dich_vu.ten_dich_vu, dich_vu.gia, dich_vu.mo_ta, user_dich_vu.so_luong, (dich_vu.gia * user_dich_vu.so_luong) as SoTienPhaiTra from user INNER JOIN don_hang on user.ID = don_hang.ID_user INNER JOIN user_dich_vu on user_dich_vu.ID_user = user.ID INNER JOIN dich_vu on  dich_vu.ID = user_dich_vu.ID_dich_vu"
+        self.cur.execute(query)
+        results = self.cur.fetchall()
+        self.close_connection()
+        return results

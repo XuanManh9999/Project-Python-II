@@ -1,10 +1,10 @@
 from PyQt6 import QtCore, QtGui, QtWidgets, uic
-from PyQt6.QtWidgets import QApplication, QMainWindow, QMessageBox, QStackedWidget
+from PyQt6.QtWidgets import QApplication, QMainWindow, QMessageBox, QStackedWidget, QFileDialog
 import sys
-
-
-
 from database import Database
+from openpyxl import Workbook
+from openpyxl.styles import Font, Border, Side
+import pandas as pd
 
 # Hàm để căn cửa sổ ra giữa màn hình
 def center_widget(widget):
@@ -48,6 +48,7 @@ class TrangChu(QMainWindow):
         self.btnQuanLyNguoiDung.clicked.connect(self.QuanLyNguoiDung)
         self.btnQuanLySanPham.clicked.connect(self.QuanLySanPham)
         self.btnQuanlyDichVu.clicked.connect(self.QuanlyDichVu)
+        self.btnQuanLyDonHang.clicked.connect(self.ThongKeDoanhThu)
         self.btnDangXuat.clicked.connect(self.DangXuat)
 
     def QuanLyNguoiDung(self):
@@ -72,6 +73,11 @@ class TrangChu(QMainWindow):
         widget.setFixedHeight(625)
         center_widget(widget)
         widget.setCurrentIndex(0)
+    def ThongKeDoanhThu(self):
+        widget.setFixedWidth(1084)
+        widget.setFixedHeight(642)
+        center_widget(widget)
+        widget.setCurrentIndex(7)
 
 
 # Cửa sổ Quản Lý Người Dùng
@@ -199,13 +205,13 @@ class QuanLyNguoiDung(QMainWindow):
                 QMessageBox.warning(self, "Lỗi", f"Lỗi khi tìm kiếm người dùng: {str(e)}")
 
     def NguoiDungSuDungDichVu(self):
-        widget.setFixedWidth(1081)
-        widget.setFixedHeight(900)
+        widget.setFixedWidth(997)
+        widget.setFixedHeight(598)
         center_widget(self)
         widget.setCurrentIndex(5)
     def NguoiDungMuaSanPham(self):
-        widget.setFixedWidth(1081)
-        widget.setFixedHeight(900)
+        widget.setFixedWidth(1074)
+        widget.setFixedHeight(541)
         center_widget(self)
         widget.setCurrentIndex(6)
     def QuayLai(self):
@@ -362,8 +368,8 @@ class QuanLyDichVu(QMainWindow):
         try:
             id = self.tableWidget.item(selected_row, 0).text()
             ten_dich_vu = self.tableWidget.item(selected_row, 1).text()
-            gia = self.tableWidget.item(selected_row, 3).text()
-            mo_ta = self.tableWidget.item(selected_row, 4).text()
+            gia = self.tableWidget.item(selected_row, 2).text()
+            mo_ta = self.tableWidget.item(selected_row, 3).text()
 
             self.txtTenDichVu.setText(ten_dich_vu)
             self.txtGia.setText(gia)
@@ -419,6 +425,7 @@ class QuanLyDichVu(QMainWindow):
 class NguoiDungMuaSanPham(QMainWindow):
     def __init__(self):
         super(NguoiDungMuaSanPham, self).__init__()
+
         uic.loadUi("NguoiDungMuaSanPham.ui", self)
         center_widget(self)
         self.db = Database()
@@ -704,12 +711,124 @@ class NguoiDungMuaDichVu(QMainWindow):
         widget.setCurrentIndex(1)
 
 
+class ThongKeDoanhThu(QMainWindow):
+    def __init__(self):
+        super(ThongKeDoanhThu, self).__init__()
+        uic.loadUi("ThongKeDoanhThu.ui", self)
+        center_widget(self)
+        self.db = Database()
+        self.tongSoTien = 0
+        self.soLuong = 0
+        self.btnTheoDichVu.clicked.connect(self.TheoDichVu)
+        self.btnTheoSanPham.clicked.connect(self.TheoSanPham)
+        self.btnInBaoCao.clicked.connect(self.InBaoCao)
+        self.btnThoat.clicked.connect(self.QuayLai)
+        # table widget
+        self.tableWidget = self.findChild(QtWidgets.QTableWidget, 'tableWidget')
 
+    def TheoSanPham(self):
+        self.tableWidget.setColumnCount(13)
+        self.tableWidget.setHorizontalHeaderLabels(
+            ["ID", "Tên", "Số điện thoại", "Email", "Địa chỉ", "Trạng thái đơn hàng", "Tên", "Loại", "Mô tả",
+             "Chất liệu", "Giá", "Số lượng", "Số tiền phải trả"])
+        try:
+            self.tongSoTien = 0
+            self.soLuong = 0
+            data = self.db.select_tt_order_product()
+            self.tableWidget.setRowCount(0)
+            for row_number, row_data in enumerate(data):
+                self.soLuong += 1
+                self.tableWidget.insertRow(row_number)
+                for column_number, data in enumerate(row_data):
+                    # tinh tong so tien neu trạng thái đơn hàng là Hoàn tất
+                    if column_number == 12 and row_data[5] == "Hoàn tất":
+                        self.tongSoTien += data
+                    self.tableWidget.setItem(row_number, column_number, QtWidgets.QTableWidgetItem(str(data)))
+            # hien thi tong so tien
+            # fort mat thanh tien Viet Nam  1.000.000
+            self.txtTongTien.setText("{:,}".format(self.tongSoTien) + "VNĐ")
+            self.txtSoLuongDon.setText(str(self.soLuong))
+            # self.txtTongTien.setText(str(self.tongSoTien))
+        except Exception as e:
+            QMessageBox.warning(self, "Lỗi", f"Lỗi khi tải dữ liệu sản phẩm: {str(e)}")
+    def TheoDichVu(self):
+        self.tongSoTien = 0
+        self.soLuong = 0
+        self.tableWidget.setColumnCount(11)
+        self.tableWidget.setHorizontalHeaderLabels(
+            ["ID", "Tên", "Số điện thoại", "Email", "Địa chỉ", "Ngày sinh", "Tên dịch vụ", "Giá", "Mô tả",
+             "Số lượng", "Số tiền phải trả"])
+        try:
+            data = self.db.select_tt_order_service()
+            self.tableWidget.setRowCount(0)
+            for row_number, row_data in enumerate(data):
+                self.soLuong += 1
+                self.tableWidget.insertRow(row_number)
+                for column_number, data in enumerate(row_data):
+                    # tinh tong so tien
+                    if column_number == 10:
+                        self.tongSoTien += data
+                    self.tableWidget.setItem(row_number, column_number, QtWidgets.QTableWidgetItem(str(data)))
+            # hien thi tong so tien
+            self.txtTongTien.setText("{:,}".format(self.tongSoTien) + "VNĐ")
+            self.txtSoLuongDon.setText(str(self.soLuong))
+        except Exception as e:
+            QMessageBox.warning(self, "Lỗi", f"Lỗi khi tải dữ liệu dịch vụ: {str(e)}")
 
+    def InBaoCao(self):
+        try:
+            file_name = QFileDialog.getSaveFileName(self, "Save File", "", "Excel Files (*.xlsx)")
+            if file_name[0]:
+                wb = Workbook()
+                ws = wb.active
 
+                # Định dạng font in đậm và đường viền
+                bold_font = Font(bold=True)
+                thin_border = Border(left=Side(style='thin'),
+                                     right=Side(style='thin'),
+                                     top=Side(style='thin'),
+                                     bottom=Side(style='thin'))
 
+                # Thêm tiêu đề vào trước
+                if self.tableWidget.columnCount() == 13:
+                    headers = ["ID", "Tên", "Số điện thoại", "Email", "Địa chỉ", "Trạng thái đơn hàng", "Tên", "Loại",
+                               "Mô tả", "Chất liệu", "Giá", "Số lượng", "Số tiền phải trả"]
+                elif self.tableWidget.columnCount() == 11:
+                    headers = ["ID", "Tên", "Số điện thoại", "Email", "Địa chỉ", "Ngày sinh", "Tên dịch vụ", "Giá",
+                               "Mô tả", "Số lượng", "Số tiền phải trả"]
 
+                for col_num, header in enumerate(headers, 1):
+                    cell = ws.cell(row=1, column=col_num, value=header)
+                    cell.font = bold_font
+                    cell.border = thin_border
 
+                # Sau đó thêm dữ liệu
+                for row in range(self.tableWidget.rowCount()):
+                    for col in range(self.tableWidget.columnCount()):
+                        cell = ws.cell(row=row + 2, column=col + 1, value=self.tableWidget.item(row, col).text())
+                        cell.border = thin_border  # Thêm đường viền cho các ô dữ liệu
+
+                # Thêm dòng tổng kết
+                ws.append(["Tổng số lượng đơn hàng: ", str(self.soLuong)])
+                ws.append(["Tổng số tiền", "{:,}".format(self.tongSoTien) + "VNĐ"])
+
+                # Định dạng đường viền cho dòng tổng kết
+                last_row = ws.max_row
+                for col_num in range(1, self.tableWidget.columnCount() + 1):
+                    cell = ws.cell(row=last_row - 1, column=col_num)
+                    cell.border = thin_border
+                    cell = ws.cell(row=last_row, column=col_num)
+                    cell.border = thin_border
+
+                wb.save(file_name[0])
+                QMessageBox.information(self, "Thông báo", "Đã lưu báo cáo thành công.")
+        except Exception as e:
+            QMessageBox.warning(self, "Lỗi", f"Lỗi khi lưu báo cáo: {str(e)}")
+    def QuayLai(self):
+        widget.setFixedWidth(1081)
+        widget.setFixedHeight(900)
+        center_widget(self)
+        widget.setCurrentIndex(1)
 
 # Khởi tạo ứng dụng
 app = QApplication(sys.argv)
@@ -723,7 +842,7 @@ quanlysanpham_f = QuanLySanPham()
 quanlydichvu_f = QuanLyDichVu()
 nguoidungmuasanpham_f = NguoiDungMuaSanPham()
 nguoidungmuadichvu_f = NguoiDungMuaDichVu()
-
+thongkedoanhthu_f = ThongKeDoanhThu()
 # Thêm các cửa sổ vào stacked widget
 widget.addWidget(dangnhap_f)
 widget.addWidget(trangchu_f)
@@ -732,6 +851,7 @@ widget.addWidget(quanlysanpham_f)
 widget.addWidget(quanlydichvu_f)
 widget.addWidget(nguoidungmuasanpham_f)
 widget.addWidget(nguoidungmuadichvu_f)
+widget.addWidget(thongkedoanhthu_f)
 
 
 # Thiết lập cửa sổ ban đầu
