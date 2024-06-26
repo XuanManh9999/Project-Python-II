@@ -422,105 +422,170 @@ class NguoiDungMuaSanPham(QMainWindow):
         uic.loadUi("NguoiDungMuaSanPham.ui", self)
         center_widget(self)
         self.db = Database()
-        # lam tuong tu nguoi dung mua dich vu
-        self.tableWidget = self.findChild(QtWidgets.QTableWidget, 'tableWidget')  # Tìm tableWidget trong UI
+        self.id_don_hang = None
+        # Kết nối sự kiện khi chọn một dòng trong tableWidget
+        self.tableWidget = self.findChild(QtWidgets.QTableWidget, 'tableWidget')
         # Kết nối sự kiện khi chọn một dòng trong tableWidget
         self.tableWidget.itemSelectionChanged.connect(self.select_row)
-        self.btnThem.clicked.connect(self.Them)
-        self.btnSua.clicked.connect(self.Sua)
-        self.btnXoa.clicked.connect(self.Xoa)
-        self.btnThoat.clicked.connect(self.QuayLai)
-        self.load_product()
-    def load_product(self):
+        self.btnThemDonHang.clicked.connect(self.ThemDonHang)
+        self.btnThemSanPham.clicked.connect(self.ThemSanPham)
+        self.cboSanPham.currentIndexChanged.connect(self.on_combobox_changed)
+        self.btnSuaDonHang.clicked.connect(self.SuaTrangThaiDonHang)
+        self.btnXoaDonHang.clicked.connect(self.XoaDonHang)
+        self.btnSuaSanPham.clicked.connect(self.CapNhatSoLuongSanPham)
+        self.btnThoatDonHang.clicked.connect(self.QuayLai)
+        self.loading()
+    def loading(self):
         try:
-            #loading nguoi dung len combobox
             select_user = self.db.select_user()
+            select_product = self.db.read_product()
+            all_order = self.db.select_tt_order_product()
+            # clear combobox
             self.cboNguoiDung.clear()
+            self.cboSanPham.clear()
+            for product in select_product:
+                self.cboSanPham.addItem(product[1])
             for user in select_user:
                 self.cboNguoiDung.addItem(user[1])
-            # loading du lieu tu bang product
-            data = self.db.read_product()
+            # loading all_order len table widget
             self.tableWidget.setRowCount(0)
-            for row_number, row_data in enumerate(data):
+            for row_number, row_data in enumerate(all_order):
                 self.tableWidget.insertRow(row_number)
                 for column_number, data in enumerate(row_data):
                     self.tableWidget.setItem(row_number, column_number, QtWidgets.QTableWidgetItem(str(data)))
+
         except Exception as e:
-            QMessageBox.warning(self, "Lỗi", f"Lỗi khi tải dữ liệu sản phẩm: {str(e)}")
+            QMessageBox.warning(self, "Lỗi", f"Lỗi khi tải dữ liệu người dùng: {str(e)}")
+    def ThemDonHang(self):
+        try:
+            # lay ten user tu comboBox roi lay id tuong ung
+            id_user = self.db.select_user()[self.cboNguoiDung.currentIndex()][0]
+            trang_thai_don_hang = self.cboTrangThaiDongHang.currentText()
+            self.id_don_hang = self.db.insert_order(id_user, trang_thai_don_hang)[0]
+            QMessageBox.information(self, "Thông báo", "Đã tạo đơn hàng thành công.")
+            self.loading()
+        except Exception as e:
+            QMessageBox.warning(self, "Lỗi", f"Lỗi khi tạo đơn hàng: {str(e)}")
+    def ThemSanPham(self):
+        try:
+            # lay ten san pham tu comboBox roi lay id tuong ung
+            id_product = self.db.read_product()[self.cboSanPham.currentIndex()][0]
+            print("check id_product", id_product)
+            so_luong = self.txtSoLuong.text()
+            # kiem tra so luong co rong khong
+            if so_luong == "":
+                QMessageBox.information(self, "Thông báo", "Vui lòng nhập số lượng.")
+                return
+            if not so_luong.isdigit():
+                QMessageBox.information(self, "Thông báo", "Số lượng phải là số.")
+                return
+            if int(so_luong) <= 0:
+                QMessageBox.information(self, "Thông báo", "Số lượng phải lớn hơn 0.")
+                return
+            self.db.insert_product_order(id_product, self.id_don_hang, so_luong)
+            self.loading()
+            QMessageBox.information(self, "Thông báo", "Đã thêm sản phẩm vào đơn hàng thành công.")
+        except Exception as e:
+            QMessageBox.warning(self, "Lỗi", f"Lỗi khi thêm sản phẩm vào đơn hàng: {str(e)}")
+
+    # su kien khi select cboSanPham se hien thi so luong san pham tuong ung neu co
+
     def select_row(self):
         selected_items = self.tableWidget.selectedItems()
         if selected_items:
             try:
-                id_san_pham = self.tableWidget.item(selected_items[0].row(), 0).text()
-                id_user = self.db.select_user()[self.cboNguoiDung.currentIndex()][0]
-
-                so_luong = self.db.select_quantity_user_product(id_user, id_san_pham)[0]
-                if so_luong:
-                    self.txtSoLuongSanPham.setText(str(so_luong))
-                else:
-                    self.txtSoLuongSanPham.setText("Chưa mua")
+                #lay trang thai don hang
+                trang_thai_don_hang = self.tableWidget.item(selected_items[0].row(), 5).text()
+                ten_san_pham =  self.tableWidget.item(selected_items[0].row(), 6).text()
+                so_luong = self.tableWidget.item(selected_items[0].row(), 11).text()
+                # set trang thai don hang tren comboBox tuong ung
+                self.cboTrangThaiDongHang.setCurrentText(trang_thai_don_hang)
+                # set ten san pham tren comboBox tuong ung
+                self.cboSanPham.setCurrentText(ten_san_pham)
+                self.txtSoLuong.setText(so_luong)
             except Exception as e:
-                so_luong = "Chưa mua"
-                self.txtSoLuongSanPham.setText(so_luong)
-                return
-    def Them(self):
-        if self.tableWidget.currentRow() == -1:
-            QMessageBox.information(self, "Thông báo", "Vui lòng chọn sản phẩm.")
-            return
-        id_san_pham = self.tableWidget.item(self.tableWidget.currentRow(), 0).text()
-        id_user = self.db.select_user()[self.cboNguoiDung.currentIndex()][0]
-        so_luong = self.txtSoLuongSanPham.text()
-        if so_luong == "":
-            QMessageBox.information(self, "Thông báo", "Vui lòng nhập số lượng.")
-            return
-        if not so_luong.isdigit():
-            QMessageBox.information(self, "Thông báo", "Số lượng phải là số.")
-            return
-        if int(so_luong) <= 0:
-            QMessageBox.information(self, "Thông báo", "Số lượng phải lớn hơn 0.")
-            return
-        try:
-            self.db.insert_user_product(id_user, id_san_pham, so_luong)
-            QMessageBox.information(self, "Thông báo", "Đã thêm sản phẩm thành công.")
-            self.txtSoLuong.setText("")
-            self.load_product()
-        except Exception as e:
-            QMessageBox.warning(self, "Lỗi", f"Lỗi khi thêm sản phẩm: {str(e)}")
-    def Sua(self):
-        id_user = self.db.select_user()[self.cboNguoiDung.currentIndex()][0]
-        id_product = self.tableWidget.item(self.tableWidget.currentRow(), 0).text()
-        so_luong = self.txtSoLuongSanPham.text()
-        if so_luong == "":
-            QMessageBox.information(self, "Thông báo", "Vui lòng nhập số lượng.")
-            return
-        if not so_luong.isdigit():
-            QMessageBox.information(self, "Thông báo", "Số lượng phải là số.")
-            return
-        if int(so_luong) <= 0:
-            QMessageBox.information(self, "Thông báo", "Số lượng phải lớn hơn 0.")
-            return
-        try:
-            self.db.update_user_product(id_user, id_product, so_luong)
-            QMessageBox.information(self, "Thông báo", "Đã cập nhật thông tin thành công.")
-            self.load_product()
-        except Exception as e:
-            QMessageBox.warning(self, "Lỗi", f"Lỗi khi cập dữ liệu: {str(e)}")
+                QMessageBox.warning(self, "Lỗi", f"Lỗi khi chọn đơn hàng: {str(e)}")
 
-    def Xoa(self):
-        id_user = self.db.select_user()[self.cboNguoiDung.currentIndex()][0]
-        id_product = self.tableWidget.item(self.tableWidget.currentRow(), 0).text()
+    def on_combobox_changed(self):
+        # Kiểm tra combobox nào đã thay đổi
+        changed_combobox = self.sender()
+
+        # Nếu combobox thay đổi là cboSanPham thì thực hiện xử lý
+        if changed_combobox == self.cboSanPham:
+            try:
+                id_product = self.db.read_product()[self.cboSanPham.currentIndex()][0]
+                quantity = self.db.select_quantity_product_order(self.id_don_hang, id_product)[0]
+
+                if quantity:
+                    self.txtSoLuong.setText(str(quantity))
+                else:
+                    self.txtSoLuong.setText("Chưa mua")
+            except Exception as e:
+                self.txtSoLuong.setText("0")
+    def SuaTrangThaiDonHang(self):
         try:
-            self.db.delete_user_product(id_user, id_product)
-            QMessageBox.information(self, "Thông báo", "Đã xóa người dùng mua sản phẩm thành công.")
-            self.load_product()
+            trang_thai_don_hang = self.cboTrangThaiDongHang.currentText()
+            # lay id don hang tu table widget
+            selected_items = self.tableWidget.selectedItems()
+            if selected_items:
+               id_dh = self.tableWidget.item(selected_items[0].row(), 0).text()
+            # check xem co id don hang nao chua
+            print("Check id_dh", id_dh)
+            print("Check trang thai don hang", trang_thai_don_hang)
+            if id_dh == "":
+                QMessageBox.information(self, "Thông báo", "Vui lòng chọn đơn hàng.")
+            else:
+                self.db.cap_nhat_trang_thai_don_hang(id_dh, trang_thai_don_hang)
+                QMessageBox.information(self, "Thông báo", "Đã cập nhật trạng thái đơn hàng thành công.")
+                self.loading()
         except Exception as e:
-            QMessageBox.warning(self, "Lỗi", f"Lỗi khi xóa: {str(e)}")
+            QMessageBox.warning(self, "Lỗi", f"Lỗi khi cập nhật trạng thái đơn hàng: {str(e)}")
+    def XoaDonHang(self):
+        try:
+            selected_items = self.tableWidget.selectedItems()
+            if selected_items:
+                id_dh = self.tableWidget.item(selected_items[0].row(), 0).text()
+                if id_dh == "":
+                    QMessageBox.information(self, "Thông báo", "Vui lòng chọn đơn hàng.")
+                else:
+                    self.db.xoa_don_hang(id_dh)
+                    QMessageBox.information(self, "Thông báo", "Đã xóa đơn hàng thành công.")
+                    self.loading()
+        except Exception as e:
+            QMessageBox.warning(self, "Lỗi", f"Lỗi khi xóa đơn hàng: {str(e)}")
+    def CapNhatSoLuongSanPham(self):
+        try:
+            # lay id san pham tu comboBox
+            id_product = self.db.read_product()[self.cboSanPham.currentIndex()][0]
+            so_luong = self.txtSoLuong.text()
+            # kiem tra so luong co rong khong
+            if so_luong == "":
+                QMessageBox.information(self, "Thông báo", "Vui lòng nhập số lượng.")
+                return
+            if not so_luong.isdigit():
+                QMessageBox.information(self, "Thông báo", "Số lượng phải là số.")
+                return
+            if int(so_luong) <= 0:
+                QMessageBox.information(self, "Thông báo", "Số lượng phải lớn hơn 0.")
+                return
+            # lay id don hang tu table widget
+            selected_items = self.tableWidget.selectedItems()
+            if selected_items:
+                id_dh = self.tableWidget.item(selected_items[0].row(), 0).text()
+            # check xem co id don hang nao chua
+            if id_dh == "":
+                QMessageBox.information(self, "Thông báo", "Vui lòng chọn đơn hàng.")
+            else:
+                self.db.cap_nhat_so_luong_product_order(id_product, id_dh, so_luong)
+                QMessageBox.information(self, "Thông báo", "Đã cập nhật số lượng sản phẩm thành công.")
+                self.loading()
+        except Exception as e:
+            QMessageBox.warning(self, "Lỗi", f"Lỗi khi cập nhật số lượng sản phẩm: {str(e)}")
     def QuayLai(self):
         widget.setFixedWidth(1081)
         widget.setFixedHeight(900)
         center_widget(self)
         widget.setCurrentIndex(1)
-
 
 class NguoiDungMuaDichVu(QMainWindow):
     def __init__(self):

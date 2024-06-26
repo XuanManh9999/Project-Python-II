@@ -132,7 +132,7 @@ class Database:
         self.con.commit()
         self.close_connection()
     # sua
-    def update_user_s1ervice(self, user_id, service_id, quantity):
+    def update_user_service(self, user_id, service_id, quantity):
         self.open_connection()
         query = "UPDATE user_dich_vu SET so_luong=%s WHERE ID_user=%s AND ID_dich_vu=%s"
         self.cur.execute(query, (quantity, user_id, service_id))
@@ -160,4 +160,61 @@ class Database:
         results = self.cur.fetchall()
         self.close_connection()
         return results
+    #loadding don_hang
+    # them don hang vao bang don_hang va lay id cua don hang vua them
+    def insert_order(self, user_id, trang_thai_don_hang):
+        self.open_connection()
+        query = "INSERT INTO don_hang (ID_user, trang_thai_don_hang) VALUES(%s, %s)"
+        self.cur.execute(query, (user_id, trang_thai_don_hang))
+        self.con.commit()
+        query = "SELECT LAST_INSERT_ID()"
+        self.cur.execute(query)
+        result = self.cur.fetchone()
+        self.close_connection()
+        return result
+    # them san pham vao trong bang product_don_hang
+    def insert_product_order(self, ID_product, ID_don_hang, soluong):
+        self.open_connection()
+        query = "INSERT INTO product_don_hang (ID_product, ID_don_hang, soluong) VALUES(%s, %s, %s)"
+        self.cur.execute(query, (ID_product, ID_don_hang, soluong))
+        self.con.commit()
+        self.close_connection()
+    def select_tt_order_product(self):
+        self.open_connection()
+        query = "SELECT don_hang.ID, user.ten, user.so_dien_thoai, user.email, user.dia_chi, don_hang.trang_thai_don_hang, product.ten, product.loai, product.mo_ta, product.chat_lieu, product.gia, product_don_hang.soluong, (product.gia * product_don_hang.soluong) as SoTienPhaiTra from user INNER JOIN don_hang on user.ID = don_hang.ID_user INNER JOIN product_don_hang on product_don_hang.ID_don_hang = don_hang.ID INNER JOIN product on  product.ID = product_don_hang.ID_product"
+        self.cur.execute(query)
+        results = self.cur.fetchall()
+        self.close_connection()
+        return results
+    def select_quantity_product_order(self, ID_product, ID_don_hang):
+        self.open_connection()
+        query = "SELECT soluong FROM product_don_hang WHERE ID_product=%s AND ID_don_hang=%s"
+        self.cur.execute(query, (ID_product, ID_don_hang))
+        result = self.cur.fetchone()
+        self.close_connection()
+        return result
+
+    def cap_nhat_trang_thai_don_hang(self, id_don_hang, trang_thai_don_hang):
+        self.open_connection()
+        query = "UPDATE don_hang SET trang_thai_don_hang=%s WHERE ID=%s"
+        self.cur.execute(query, (trang_thai_don_hang, id_don_hang))
+        self.con.commit()
+        self.close_connection()
+    def xoa_don_hang(self, id_don_hang):
+        self.open_connection()
+        # xoa trong bang product_don_hang
+        query = "DELETE FROM product_don_hang WHERE ID_don_hang=%s"
+        # xoa trong bang don_hang
+        query2 = "DELETE FROM don_hang WHERE ID=%s"
+        self.cur.execute(query, (id_don_hang,))
+        self.cur.execute(query2, (id_don_hang,))
+        self.con.commit()
+        self.close_connection()
+    # cap nhat so luong san pham trong product_don_hang
+    def cap_nhat_so_luong_product_order(self, ID_product, ID_don_hang, soluong):
+        self.open_connection()
+        query = "UPDATE product_don_hang SET soluong=%s WHERE ID_product=%s AND ID_don_hang=%s"
+        self.cur.execute(query, (soluong, ID_product, ID_don_hang))
+        self.con.commit()
+        self.close_connection()
 
